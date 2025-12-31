@@ -6,11 +6,20 @@ const { decodejwt } = require('../Lib/utils.js');
 const getAllMessages = async (req, res) => {
   try {
     const { tok, recieverId } = req.body;
-    const my_id = decodejwt(tok).userId;
+
+    const decoded = decodejwt(tok);
+    if (!decoded || !decoded.userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or missing token",
+      });
+    }
+
+    const my_id = decoded.userId;
 
     const messages = await messageModel.find({
       $or: [
-        { senderId: my_id, recieverId: recieverId },
+        { senderId: my_id, recieverId },
         { senderId: recieverId, recieverId: my_id },
       ],
     });
@@ -30,7 +39,15 @@ const sendMessage = async (req, res) => {
   try {
     const { text, tok, recieverId } = req.body;
 
-    const senderId = decodejwt(tok).userId;
+    const decoded = decodejwt(tok);
+    if (!decoded || !decoded.userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or missing token",
+      });
+    }
+
+    const senderId = decoded.userId;
 
     const new_message = await messageModel.create({
       senderId,
@@ -54,6 +71,7 @@ const sendMessage = async (req, res) => {
     });
   }
 };
+
 
 module.exports = {
   getAllMessages,

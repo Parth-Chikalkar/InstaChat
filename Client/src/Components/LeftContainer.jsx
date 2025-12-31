@@ -5,6 +5,7 @@ import UserLeft from './UserLeft';
 import { AuthContext } from '../../Context/AuthContext';
 import Loader from './Loader';
 import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 
 function LeftContainer({ selected, setSelected }) {
   const [visible, setvisible] = useState(false);
@@ -63,8 +64,13 @@ function LeftContainer({ selected, setSelected }) {
           />
           <p className='font-semibold text-lg'>InstaChat</p>
         </div>
+          <button className='text-red-500 md:hidden' onClick={()=>{  setToken(null);
+              setAuthUser(null);
+              localStorage.clear();}} >Logout</button>
      
       </div>
+
+     
 
   
       <div className="searchbar w-full p-3">

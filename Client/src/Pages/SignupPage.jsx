@@ -11,25 +11,33 @@ function SignupPage() {
   const { axios, setToken, setAuthUser } = useContext(AuthContext);
   const nav = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const backendurl = import.meta.env.VITE_BACKEND_URL;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  const backendurl = import.meta.env.VITE_BACKEND_URL;
 
-    try {
-      const res = await axios.post(`${backendurl}/api/auth/signup`, { fullname, email, bio, password });
-      if (res.data.success) {
-        setToken(res.data.token);
-        setAuthUser(res.data.user);
-        localStorage.setItem("token", res.data.token);
-        toast.success(res.data.message);
-        nav('/');
-      } else {
-        toast.error(res.data.message);
-      }
-    } catch (error) {
-      toast.error("Something went wrong");
+  try {
+    const res = await axios.post(`${backendurl}/api/auth/signup`, {
+      fullname,
+      email,
+      bio,
+      password,
+    });
+
+    if (res.data.success) {
+      localStorage.setItem("token", res.data.token);
+      setToken(res.data.token);
+      setAuthUser(res.data.user);
+
+      toast.success(res.data.message);
+      nav("/");
+    } else {
+      toast.error(res.data.message);
     }
+  } catch (error) {
+    toast.error("Something went wrong");
   }
+};
+
 
   return (
     <div className='w-full min-h-screen bg-black/90 flex flex-col md:flex-row justify-center items-center gap-10 md:gap-32 px-4 py-10 text-white'>

@@ -2,12 +2,11 @@ const { genToken, decodejwt } = require('../Lib/utils.js');
 const User = require('../Models/UserModel.js');
 const bcrypt = require('bcrypt');
 
-// Signup Function
 const Signup = async (req, res) => {
   const { fullname, email, password, bio } = req.body;
 
   try {
-    if (!fullname || !email || !password || !bio) {
+    if (!fullname || !email || !password ) {
       return res.json({ success: false, message: "Missing Details!" });
     }
 
@@ -23,7 +22,7 @@ const Signup = async (req, res) => {
       fullname,
       email,
       password: hashedpass,
-      bio,
+      bio : bio || "Hey There👋 , Im using InstaChat !"
     });
 
     const token = genToken(newUser._id);
@@ -39,7 +38,6 @@ const Signup = async (req, res) => {
   }
 };
 
-// Login Function
   const Login = async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -80,8 +78,8 @@ const getAllUsers =  async (req,res)=>{
     
     
   } catch (error) {
-    console.log(error.message);
-      res.json({ success: false, message: error.message });
+    console.log(error.message + " iwbib");
+      res.json({ success: false, message: error.message  });
   }
 }
 const getMe = async (req,res)=>{
