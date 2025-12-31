@@ -28,28 +28,28 @@ export const AuthProvider = ({ children }) => {
   }, [token]);
 
 
-  useEffect(() => {
-    if (!authUser) return;
+useEffect(() => {
+  if (!authUser) return;
 
-    const newSocket = io(backendurl, {
-      withCredentials: true,
-      query: { userId: authUser._id },
-    });
+  const newSocket = io(backendurl, {
+    transports: ["websocket"],
+    withCredentials: true,
+  });
 
-    // listener first
-    newSocket.on("getOnlineUsers", (users) => {
-      setonlineusers(users);
-    });
+  newSocket.on("connect", () => {
+    newSocket.emit("addUser", authUser._id);
+  });
 
-    // ask backend
-    newSocket.emit("requestOnlineUsers");
+  newSocket.on("getOnlineUsers", (users) => {
+    setonlineusers(users);
+  });
 
-    setSocket(newSocket);
+  setSocket(newSocket);
 
-    return () => {
-      newSocket.disconnect();
-    };
-  }, [authUser]);
+  return () => {
+    newSocket.disconnect();
+  };
+}, [authUser]);
 
 
 

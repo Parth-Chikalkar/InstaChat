@@ -29,40 +29,35 @@ global.io = io;
 
 
 io.on("connection", (socket) => {
-  const userId = socket.handshake.query.userId;
 
-  if (userId) {
+  socket.on("addUser", (userId) => {
+    if (!userId) return;
+
     if (!global.userSocketMap[userId]) {
       global.userSocketMap[userId] = [];
     }
-    global.userSocketMap[userId].push(socket.id);
-  }
 
-  socket.on("requestOnlineUsers", () => {
-    socket.emit(
-      "getOnlineUsers",
-      Object.keys(global.userSocketMap)
-    );
+    if (!global.userSocketMap[userId].includes(socket.id)) {
+      global.userSocketMap[userId].push(socket.id);
+    }
+
+    io.emit("getOnlineUsers", Object.keys(global.userSocketMap));
   });
 
   socket.on("disconnect", () => {
-    if (userId && global.userSocketMap[userId]) {
+    for (const userId in global.userSocketMap) {
       global.userSocketMap[userId] =
-        global.userSocketMap[userId].filter(
-          (id) => id !== socket.id
-        );
+        global.userSocketMap[userId].filter(id => id !== socket.id);
 
       if (global.userSocketMap[userId].length === 0) {
         delete global.userSocketMap[userId];
       }
     }
 
-    socket.broadcast.emit(
-      "getOnlineUsers",
-      Object.keys(global.userSocketMap)
-    );
+    io.emit("getOnlineUsers", Object.keys(global.userSocketMap));
   });
 });
+
 
 
 
