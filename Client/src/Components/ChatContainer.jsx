@@ -1,12 +1,13 @@
 import React, { useContext, useEffect, useState, useRef } from "react";
-import { IoIosSend, IoMdArrowBack } from "react-icons/io"; // Added Back Arrow
+import { IoIosSend, IoMdArrowBack } from "react-icons/io"; 
 import Messages from "./Messages";
 import { AuthContext } from "../../Context/AuthContext";
 import Loader from "./Loader";
+import toast from 'react-hot-toast';
 
-// Added setSelected to props to handle Mobile Back button
+
 function ChatContainer({ selected, setSelected }) {
-  const { selectedUser, axios, socket, onlineusers } = useContext(AuthContext);
+  const { selectedUser, axios, socket, onlineusers , authUser } = useContext(AuthContext);
   const isOnline = onlineusers?.includes(selectedUser?._id);
   const [loading, setloading] = useState(false);
   const [id, setid] = useState();
@@ -59,6 +60,7 @@ function ChatContainer({ selected, setSelected }) {
     if (!msg.trim()) return;
 
     const backendurl = import.meta.env.VITE_BACKEND_URL;
+    
     const res = await axios.post(`${backendurl}/api/messages/send`, {
       tok: localStorage.getItem("token"),
       text: msg,
@@ -68,8 +70,72 @@ function ChatContainer({ selected, setSelected }) {
     setmessages((prev) => [...prev, res.data.new_message]);
     setmsg("");
   };
-
+   
   
+   const [clearChat , setclearChat] = useState(false);
+   const [butt,setbutt] = useState(false);
+
+  const handleClearChat = async ()=>{
+   
+     toast(
+    () => (
+      <div className="bg-white/5">
+        <p className="text-red-600 font-medium mb-3">
+         ⚠️ Are you sure you want to clear the chats
+        </p>
+
+        <div className="w-full flex items-center justify-between">
+          <button
+            className="px-3 py-1 bg-red-500 text-white rounded"
+            onClick={handelYes}
+          >
+            Yes
+          </button>
+
+          <button
+            className="px-3 py-1 bg-gray-300 text-black rounded"
+            onClick={() => {
+              setclearChat(false);
+              toast.dismiss();
+            }}
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ),
+    {
+      autoClose: false,
+      closeButton: false,
+      closeOnClick: false,
+    }
+  );
+  
+ 
+  }
+
+  const handelYes = async ()=>{
+    toast.dismiss();
+    setclearChat(true);
+  setbutt(true);
+  const backendurl = import.meta.env.VITE_BACKEND_URL;
+  const res = await axios.post(`${backendurl}/api/messages/deletemessages`,{myid : authUser._id , recieverId : selectedUser._id });
+
+  if(res.data.success){
+    toast.success(res.data.message);
+    setmessages([]);
+     setclearChat(false);
+  setbutt(false);
+  }
+  else{
+    toast.error(res.data.message);
+  }
+  setclearChat(false);
+  setbutt(false);
+
+  }
+
+
   if (!selectedUser) {
       return (
           <div className="hidden md:flex flex-col items-center justify-center h-full w-full text-center">
@@ -105,7 +171,15 @@ function ChatContainer({ selected, setSelected }) {
             {isOnline ? "Online" : "Offline"}
             </span>
         </div>
+
+         <button onClick={handleClearChat} disabled={butt}  className="text-blue-400 disabled:opacity-50
+    disabled:cursor-not-allowed absolute right-5 hover:cursor-pointer text-sm">
+        Clear Chat
+        </button>
+       
       </div>
+
+      
 
    
       <div className="md:h-100   overflow-auto p-4 w-full flex flex-col gap-2">

@@ -1,6 +1,5 @@
 const userModel = require('../Models/UserModel.js');
 const messageModel = require('../Models/Message.js');
-
 const { decodejwt } = require('../Lib/utils.js');
 
 const getAllMessages = async (req, res) => {
@@ -72,8 +71,31 @@ const sendMessage = async (req, res) => {
   }
 };
 
+const deleteMsgs = async (req,res)=>{
+  try {
+   const {recieverId , myid} = req.body;
+ 
+   const chatmessages = await messageModel.deleteMany({
+  $or: [
+    { senderId: myid, recieverId: recieverId },
+    { senderId: recieverId, recieverId: myid }
+  ]
+});
+   return res.json({message :"Chats Cleared 🤫 " , success:true}); 
+  } catch (error) {
+     console.log(error.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send message",
+    });
+    
+  }
+   
+}
+
 
 module.exports = {
   getAllMessages,
   sendMessage,
+  deleteMsgs
 };
