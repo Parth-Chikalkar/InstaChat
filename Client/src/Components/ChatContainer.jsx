@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import { IoIosSend, IoMdArrowBack } from "react-icons/io";
 import Messages from "./Messages";
 import { AuthContext } from "../../Context/AuthContext";
@@ -29,9 +29,12 @@ function ChatContainer({ selected, setSelected }) {
   const [incomingCall, setIncomingCall] = useState(null);
   const [clearChat, setclearChat] = useState(false);
   const [butt, setbutt] = useState(false);
-
+  const callRef = useRef(null);
   // ================= HOOKS =================
 
+  useEffect(() => {
+  callRef.current = call;
+}, [call]);
   useEffect(() => {
     if (!socket) return;
 
@@ -93,11 +96,14 @@ useEffect(() => {
   if (!socket) return;
 
   socket.on("call-ended", async () => {
-    if (call) {
-      await call.leave();
-      setCall(null);
+  try {
+    if (callRef.current) {
+      await callRef.current.leave();
     }
-  });
+  } catch (e) {}
+
+  setCall(null);
+});
 
   return () => socket.off("call-ended");
 }, [socket, call]);
@@ -139,19 +145,29 @@ useEffect(() => {
     setmsg("");
   };
 
-  const handleStartCall = () => {
-    if (!selectedUser) return;
+ const handleStartCall = async () => {
+  if (!selectedUser) return;
 
-    const callId = [authUser._id, selectedUser._id].sort().join("-");
+  const callId = [authUser._id, selectedUser._id].sort().join("-");
 
-    socket.emit("incoming-call", {
-      to: selectedUser._id,
-      from: authUser,
-      callId,
-    });
+  // ✅ CREATE CALL FIRST
+  await fetch(`${import.meta.env.VITE_BACKEND_URL}/create-call`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ callId }),
+  });
 
-    toast.success("Calling...");
-  };
+  // ✅ THEN notify
+  socket.emit("incoming-call", {
+    to: selectedUser._id,
+    from: authUser,
+    callId,
+  });
+
+  toast.success("Calling...");
+};
 
  const handleAcceptCall = async () => {
   try {
@@ -180,16 +196,21 @@ useEffect(() => {
   };
 
 const handleEndCall = async () => {
-  if (call) {
-    await call.leave();
-
-    // 🔔 notify other user
-    socket.emit("end-call", {
-      to: selectedUser._id,
-    });
-
-    setCall(null);
+  try {
+    if (callRef.current) {
+      await callRef.current.leave();
+    }
+  } catch (e) {
+    console.log("Error leaving call:", e);
   }
+
+  // 🔔 always notify other user (even if leave fails)
+  socket.emit("end-call", {
+    to: selectedUser?._id,
+  });
+
+  // ✅ always clear state
+  setCall(null);
 };
 
   const handleClearChat = () => {

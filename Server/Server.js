@@ -130,6 +130,18 @@ app.post("/video-token", (req, res) => {
   }
 });
 
+app.post("/create-call", async (req, res) => {
+  try {
+    const { callId } = req.body;
+
+    await streamClient.video.call("default", callId).getOrCreate();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Call creation failed" });
+  }
+});
 
 app.use("/api/auth",userRouter);
 app.use("/api/messages",msgRouter)
