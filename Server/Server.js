@@ -12,6 +12,8 @@ const PORT = process.env.PORT || 2000;
 
 const app= express();
 const server = http.createServer(app);
+app.use(express.json());
+app.use(cors());
 
 const io = new Server(server,{
     cors: {
@@ -42,7 +44,48 @@ io.on("connection", (socket) => {
 
     io.emit("getOnlineUsers", Object.keys(global.userSocketMap));
   });
+// 📞 Incoming Call
+socket.on("incoming-call", ({ to, from, callId }) => {
+  const receiverSockets = global.userSocketMap[to];
 
+  if (receiverSockets) {
+    receiverSockets.forEach((socketId) => {
+      io.to(socketId).emit("incoming-call", {
+        from,
+        callId,
+      });
+    });
+  }
+});
+// ❌ Call Rejected
+socket.on("reject-call", ({ to }) => {
+  const receiverSockets = global.userSocketMap[to];
+
+  if (receiverSockets) {
+    receiverSockets.forEach((socketId) => {
+      io.to(socketId).emit("call-rejected");
+    });
+  }
+});
+// 🔚 Call Ended
+socket.on("end-call", ({ to }) => {
+  const receiverSockets = global.userSocketMap[to];
+
+  if (receiverSockets) {
+    receiverSockets.forEach((socketId) => {
+      io.to(socketId).emit("call-ended");
+    });
+  }
+});
+socket.on("call-accepted", ({ to, callId }) => {
+  const receiverSockets = global.userSocketMap[to];
+
+  if (receiverSockets) {
+    receiverSockets.forEach((socketId) => {
+      io.to(socketId).emit("call-accepted", { callId });
+    });
+  }
+});
   socket.on("disconnect", () => {
     for (const userId in global.userSocketMap) {
       global.userSocketMap[userId] =
@@ -63,8 +106,30 @@ io.on("connection", (socket) => {
 module.exports = {io , userSocketMap};
 
 
-app.use(express.json());
-app.use(cors());
+const { StreamClient } = require("@stream-io/node-sdk");
+
+const streamClient = new StreamClient(
+  process.env.GETSTREAM_API_KEY,
+  process.env.GETSTREAM_API_SECRET
+);
+
+app.post("/video-token", (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: "UserId required" });
+    }
+
+    const token = streamClient.createToken(userId);
+
+    res.json({ token });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Token generation failed" });
+  }
+});
+
 
 app.use("/api/auth",userRouter);
 app.use("/api/messages",msgRouter)
