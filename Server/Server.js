@@ -132,9 +132,17 @@ app.post("/video-token", (req, res) => {
 
 app.post("/create-call", async (req, res) => {
   try {
-    const { callId } = req.body;
+    const { callId, userId } = req.body;
 
-    await streamClient.video.call("default", callId).getOrCreate();
+    if (!callId || !userId) {
+      return res.status(400).json({ error: "callId and userId required" });
+    }
+
+    await streamClient.video.call("default", callId).getOrCreate({
+      data: {
+        created_by_id: userId, // ✅ REQUIRED FIX
+      },
+    });
 
     res.json({ success: true });
   } catch (err) {

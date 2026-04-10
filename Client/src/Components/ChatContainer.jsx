@@ -145,28 +145,36 @@ useEffect(() => {
     setmsg("");
   };
 
- const handleStartCall = async () => {
+const handleStartCall = async () => {
   if (!selectedUser) return;
 
   const callId = [authUser._id, selectedUser._id].sort().join("-");
 
-  // ✅ CREATE CALL FIRST
-  await fetch(`${import.meta.env.VITE_BACKEND_URL}/create-call`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ callId }),
-  });
+  try {
+    // ✅ CREATE CALL FIRST (with userId)
+    await fetch(`${import.meta.env.VITE_BACKEND_URL}/create-call`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        callId,
+        userId: authUser._id, // 🔥 REQUIRED FIX
+      }),
+    });
 
-  // ✅ THEN notify
-  socket.emit("incoming-call", {
-    to: selectedUser._id,
-    from: authUser,
-    callId,
-  });
+    // ✅ THEN notify
+    socket.emit("incoming-call", {
+      to: selectedUser._id,
+      from: authUser,
+      callId,
+    });
 
-  toast.success("Calling...");
+    toast.success("Calling...");
+  } catch (err) {
+    console.log(err);
+    toast.error("Call failed");
+  }
 };
 
  const handleAcceptCall = async () => {
@@ -344,7 +352,7 @@ const handleEndCall = async () => {
           {/* optional end button top */}
           <button
             onClick={handleEndCall}
-            className="md:h-fit px-3 py-1 rounded-full text-white text-sm"
+            className="md:h-fit px-3 py-1 rounded-full text-white px-2 py-3  rounded-full bg-red-600 text-sm"
           >
             End
           </button>
